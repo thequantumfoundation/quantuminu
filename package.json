@@ -1,0 +1,29 @@
+{
+  "name": "qinu-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Quantum Inu QINU QRC20-compatible smart contracts",
+  "author": "The Quantum Foundation <contact@thequantum.foundation>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thequantumfoundation/quantuminu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thequantumfoundation/quantuminu/issues",
+    "email": "contact@thequantum.foundation"
+  },
+  "homepage": "https://github.com/thequantumfoundation/quantuminu#readme",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "CI=true hardhat test",
+    "clean": "hardhat clean",
+    "transfer-admin": "hardhat run scripts/transfer-admin.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.18"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0"
+  }
+}
