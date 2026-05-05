@@ -37,10 +37,10 @@ contract QINUStaking is Ownable, ReentrancyGuard {
     event ClaimRewards(address indexed account, uint256 amount);
     event RewardsFunded(address indexed funder, uint256 amount);
 
-    constructor(address qinu_, address lpToken_, uint256 totalRewardAllocation_, address adminMultisig_) Ownable(adminMultisig_) {
+    constructor(address qinu_, address lpToken_, uint256 totalRewardAllocation_, address adminOwner_) Ownable(adminOwner_) {
         require(qinu_ != address(0), "Staking: zero QINU");
         require(lpToken_ != address(0), "Staking: zero LP");
-        require(adminMultisig_ != address(0), "Staking: zero admin");
+        require(adminOwner_ != address(0), "Staking: zero admin");
         require(totalRewardAllocation_ > 0, "Staking: zero rewards");
 
         qinu = IERC20(qinu_);

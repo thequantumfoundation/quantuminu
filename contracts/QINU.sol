@@ -56,73 +56,39 @@ contract QINU is Ownable {
     event ReflectionEnabledSet(bool enabled);
     event ReactiveBurn(address indexed reserve, uint256 amount);
 
-    struct GenesisAddresses {
-        address tippingSocial;
-        address stakingRewardsPool;
-        address airdrops;
-        address memeTreasury;
-        address liquidity;
-        address ecosystemFund;
-        address foundationTreasury;
+    struct DeploymentConfig {
+        address initialSupplyRecipient;
         address burnReserve;
-        address teamVesting;
-        address seedVesting;
         address taxTreasury;
-        address adminMultisig;
+        address adminOwner;
     }
 
-    constructor(GenesisAddresses memory genesis) Ownable(genesis.adminMultisig) {
-        _requireNonZero(genesis.tippingSocial);
-        _requireNonZero(genesis.stakingRewardsPool);
-        _requireNonZero(genesis.airdrops);
-        _requireNonZero(genesis.memeTreasury);
-        _requireNonZero(genesis.liquidity);
-        _requireNonZero(genesis.ecosystemFund);
-        _requireNonZero(genesis.foundationTreasury);
-        _requireNonZero(genesis.burnReserve);
-        _requireNonZero(genesis.teamVesting);
-        _requireNonZero(genesis.seedVesting);
-        _requireNonZero(genesis.taxTreasury);
-        _requireNonZero(genesis.adminMultisig);
+    constructor(DeploymentConfig memory config) Ownable(config.adminOwner) {
+        _requireNonZero(config.initialSupplyRecipient);
+        _requireNonZero(config.burnReserve);
+        _requireNonZero(config.taxTreasury);
+        _requireNonZero(config.adminOwner);
 
-        treasury = genesis.taxTreasury;
-        burnReserve = genesis.burnReserve;
+        treasury = config.taxTreasury;
+        burnReserve = config.burnReserve;
 
         _setExcludedFromReflection(BURN_ADDRESS, true);
         _setExcludedFromReflection(address(this), true);
-        _setExcludedFromReflection(genesis.burnReserve, true);
-        _setExcludedFromReflection(genesis.stakingRewardsPool, true);
-        _setExcludedFromReflection(genesis.teamVesting, true);
-        _setExcludedFromReflection(genesis.seedVesting, true);
-        _setExcludedFromReflection(genesis.taxTreasury, true);
+        _setExcludedFromReflection(config.burnReserve, true);
+        _setExcludedFromReflection(config.taxTreasury, true);
 
-        _setFeeExempt(genesis.adminMultisig, true);
-        _setFeeExempt(genesis.taxTreasury, true);
-        _setFeeExempt(genesis.foundationTreasury, true);
-        _setFeeExempt(genesis.burnReserve, true);
-        _setFeeExempt(genesis.stakingRewardsPool, true);
-        _setFeeExempt(genesis.teamVesting, true);
-        _setFeeExempt(genesis.seedVesting, true);
+        _setFeeExempt(config.adminOwner, true);
+        _setFeeExempt(config.initialSupplyRecipient, true);
+        _setFeeExempt(config.taxTreasury, true);
+        _setFeeExempt(config.burnReserve, true);
 
-        _setLimitExempt(genesis.adminMultisig, true);
-        _setLimitExempt(genesis.taxTreasury, true);
-        _setLimitExempt(genesis.foundationTreasury, true);
-        _setLimitExempt(genesis.burnReserve, true);
-        _setLimitExempt(genesis.stakingRewardsPool, true);
-        _setLimitExempt(genesis.teamVesting, true);
-        _setLimitExempt(genesis.seedVesting, true);
+        _setLimitExempt(config.adminOwner, true);
+        _setLimitExempt(config.initialSupplyRecipient, true);
+        _setLimitExempt(config.taxTreasury, true);
+        _setLimitExempt(config.burnReserve, true);
         _setLimitExempt(BURN_ADDRESS, true);
 
-        _mintGenesis(genesis.tippingSocial, INITIAL_SUPPLY * 10 / 100);
-        _mintGenesis(genesis.stakingRewardsPool, INITIAL_SUPPLY * 20 / 100);
-        _mintGenesis(genesis.airdrops, INITIAL_SUPPLY * 10 / 100);
-        _mintGenesis(genesis.memeTreasury, INITIAL_SUPPLY * 5 / 100);
-        _mintGenesis(genesis.liquidity, INITIAL_SUPPLY * 75 / 1000);
-        _mintGenesis(genesis.ecosystemFund, INITIAL_SUPPLY * 75 / 1000);
-        _mintGenesis(genesis.foundationTreasury, INITIAL_SUPPLY * 10 / 100);
-        _mintGenesis(genesis.burnReserve, INITIAL_SUPPLY * 10 / 100);
-        _mintGenesis(genesis.teamVesting, INITIAL_SUPPLY * 10 / 100);
-        _mintGenesis(genesis.seedVesting, INITIAL_SUPPLY * 10 / 100);
+        _mintGenesis(config.initialSupplyRecipient, INITIAL_SUPPLY);
     }
 
     function totalSupply() external view returns (uint256) {

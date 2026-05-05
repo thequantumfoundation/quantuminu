@@ -2,75 +2,70 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 const parse = ethers.parseEther;
+const MAINNET_INITIAL_SUPPLY_RECIPIENT = "0x40ed2bf6557630e9184455da43a2df5149171b14";
 
 async function deployQinu() {
   const signers = await ethers.getSigners();
-  const [admin, tipping, stakingPool, airdrops, memeTreasury, liquidity, foundationTreasury, burnReserve, teamVesting, seedVesting, taxTreasury, user, recipient] = signers;
+  const [admin, initialSupplyRecipient, burnReserve, taxTreasury, user, recipient] = signers;
 
   const QINU = await ethers.getContractFactory("QINU");
   const qinu = await QINU.deploy({
-    tippingSocial: tipping.address,
-    stakingRewardsPool: stakingPool.address,
-    airdrops: airdrops.address,
-    memeTreasury: memeTreasury.address,
-    liquidity: liquidity.address,
-    ecosystemFund: signers[13].address,
-    foundationTreasury: foundationTreasury.address,
+    initialSupplyRecipient: initialSupplyRecipient.address,
     burnReserve: burnReserve.address,
-    teamVesting: teamVesting.address,
-    seedVesting: seedVesting.address,
     taxTreasury: taxTreasury.address,
-    adminMultisig: admin.address
+    adminOwner: admin.address
   });
 
-  return { qinu, signers, admin, tipping, stakingPool, burnReserve, taxTreasury, user, recipient };
+  return { qinu, signers, admin, initialSupplyRecipient, burnReserve, taxTreasury, user, recipient };
 }
 
 describe("QINU", function () {
-  it("lets a deployer assign ownership directly to a separate admin multisig", async function () {
-    const signers = await ethers.getSigners();
-    const [deployer, bossAdmin, tipping, stakingPool, airdrops, memeTreasury, liquidity, foundationTreasury, burnReserve, teamVesting, seedVesting, taxTreasury, ecosystemFund] = signers;
+  it("lets a deployer assign ownership directly to a separate admin wallet", async function () {
+    const [deployer, bossAdmin, initialSupplyRecipient, burnReserve, taxTreasury] = await ethers.getSigners();
     const QINU = await ethers.getContractFactory("QINU", deployer);
     const qinu = await QINU.deploy({
-      tippingSocial: tipping.address,
-      stakingRewardsPool: stakingPool.address,
-      airdrops: airdrops.address,
-      memeTreasury: memeTreasury.address,
-      liquidity: liquidity.address,
-      ecosystemFund: ecosystemFund.address,
-      foundationTreasury: foundationTreasury.address,
+      initialSupplyRecipient: initialSupplyRecipient.address,
       burnReserve: burnReserve.address,
-      teamVesting: teamVesting.address,
-      seedVesting: seedVesting.address,
       taxTreasury: taxTreasury.address,
-      adminMultisig: bossAdmin.address
+      adminOwner: bossAdmin.address
     });
 
     expect(await qinu.owner()).to.equal(bossAdmin.address);
+    expect(await qinu.balanceOf(initialSupplyRecipient.address)).to.equal(parse("1000000000000"));
     await expect(qinu.connect(deployer).setTaxEnabled(false)).to.be.revertedWithCustomError(qinu, "OwnableUnauthorizedAccount");
     await qinu.connect(bossAdmin).setTaxEnabled(false);
     expect(await qinu.taxEnabled()).to.equal(false);
   });
 
-  it("mints and allocates the fixed genesis supply", async function () {
-    const { qinu, tipping, stakingPool, burnReserve } = await deployQinu();
+  it("mints the complete fixed supply to the initial supply recipient", async function () {
+    const { qinu, initialSupplyRecipient, burnReserve } = await deployQinu();
 
     expect(await qinu.name()).to.equal("Quantum Inu");
     expect(await qinu.symbol()).to.equal("QINU");
     expect(await qinu.decimals()).to.equal(18);
     expect(await qinu.totalSupply()).to.equal(parse("1000000000000"));
-    expect(await qinu.balanceOf(tipping.address)).to.equal(parse("100000000000"));
-    expect(await qinu.balanceOf(stakingPool.address)).to.equal(parse("200000000000"));
-    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("100000000000"));
+    expect(await qinu.balanceOf(initialSupplyRecipient.address)).to.equal(parse("1000000000000"));
+    expect(await qinu.balanceOf(burnReserve.address)).to.equal(0);
+  });
+
+  it("supports the configured mainnet initial supply recipient wallet", async function () {
+    const [admin, burnReserve, taxTreasury] = await ethers.getSigners();
+    const QINU = await ethers.getContractFactory("QINU");
+    const qinu = await QINU.deploy({
+      initialSupplyRecipient: MAINNET_INITIAL_SUPPLY_RECIPIENT,
+      burnReserve: burnReserve.address,
+      taxTreasury: taxTreasury.address,
+      adminOwner: admin.address
+    });
+
+    expect(await qinu.balanceOf(MAINNET_INITIAL_SUPPLY_RECIPIENT)).to.equal(await qinu.totalSupply());
   });
 
   it("applies the 2% transfer tax split", async function () {
-    const { qinu, tipping, taxTreasury, user, recipient } = await deployQinu();
+    const { qinu, initialSupplyRecipient, taxTreasury, user, recipient } = await deployQinu();
     const amount = parse("1000000");
 
-    await qinu.setFeeExempt(tipping.address, true);
-    await qinu.connect(tipping).transfer(user.address, parse("10000000"));
-    await qinu.setFeeExempt(tipping.address, false);
+    await qinu.connect(initialSupplyRecipient).transfer(user.address, parse("10000000"));
     await qinu.connect(user).transfer(recipient.address, amount);
 
     expect(await qinu.balanceOf(recipient.address)).to.be.gte(parse("980000"));
@@ -80,27 +75,32 @@ describe("QINU", function () {
   });
 
   it("enforces launch max tx and max wallet limits", async function () {
-    const { qinu, tipping, user } = await deployQinu();
+    const { qinu, initialSupplyRecipient, user, recipient } = await deployQinu();
 
-    await expect(qinu.connect(tipping).transfer(user.address, parse("3000000000"))).to.be.revertedWith("QINU: max tx exceeded");
+    await qinu.setMaxWallet(parse("1000000000000"));
+    await qinu.connect(initialSupplyRecipient).transfer(user.address, parse("3000000000"));
+    await expect(qinu.connect(user).transfer(recipient.address, parse("3000000000"))).to.be.revertedWith("QINU: max tx exceeded");
 
     await qinu.setMaxTx(parse("10000000000"));
-    await expect(qinu.connect(tipping).transfer(user.address, parse("6000000000"))).to.be.revertedWith("QINU: max wallet exceeded");
+    await qinu.setMaxWallet(parse("5000000000"));
+    await expect(qinu.connect(initialSupplyRecipient).transfer(recipient.address, parse("6000000000"))).to.be.revertedWith("QINU: max wallet exceeded");
   });
 
-  it("allows multisig admin to trigger reserve burns", async function () {
-    const { qinu, burnReserve } = await deployQinu();
+  it("allows admin to trigger reserve burns after the reserve is funded", async function () {
+    const { qinu, initialSupplyRecipient, burnReserve } = await deployQinu();
+
+    await qinu.connect(initialSupplyRecipient).transfer(burnReserve.address, parse("10000000"));
 
     await qinu.triggerReactiveBurn(parse("1000000"));
 
-    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("99999000000"));
+    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("9000000"));
     expect(await qinu.totalSupply()).to.equal(parse("999999000000"));
   });
 
   it("caps reflection exclusions to keep transfers gas-bounded", async function () {
     const { qinu } = await deployQinu();
     const maxExclusions = Number(await qinu.MAX_REFLECTION_EXCLUSIONS());
-    const initiallyExcluded = 7;
+    const initiallyExcluded = 4;
 
     for (let index = 0; index < maxExclusions - initiallyExcluded; index++) {
       const account = ethers.getAddress(`0x${(index + 1).toString(16).padStart(40, "0")}`);
@@ -131,7 +131,7 @@ describe("QINUVesting", function () {
 });
 
 describe("QINUStaking", function () {
-  it("lets a deployer assign staking ownership directly to a separate admin multisig", async function () {
+  it("lets a deployer assign staking ownership directly to a separate admin wallet", async function () {
     const [deployer, bossAdmin] = await ethers.getSigners();
     const MockERC20 = await ethers.getContractFactory("MockERC20", deployer);
     const qinu = await MockERC20.deploy("Quantum Inu", "QINU");
@@ -189,13 +189,13 @@ describe("QINUStaking", function () {
   });
 
   it("rejects taxed QINU deposits that would break staking accounting", async function () {
-    const { qinu, tipping, user, admin } = await deployQinu();
+    const { qinu, initialSupplyRecipient, user, admin } = await deployQinu();
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const lp = await MockERC20.deploy("QINU LP", "QLP");
     const Staking = await ethers.getContractFactory("QINUStaking");
     const staking = await Staking.deploy(qinu.target, lp.target, parse("1000000"), admin.address);
 
-    await qinu.connect(tipping).transfer(user.address, parse("1000"));
+    await qinu.connect(initialSupplyRecipient).transfer(user.address, parse("1000"));
     await qinu.connect(user).approve(staking.target, parse("100"));
 
     await expect(staking.connect(user).stake(parse("100"))).to.be.revertedWith("Staking: fee token unsupported");

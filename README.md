@@ -12,12 +12,12 @@ This repository contains a QRC20/ERC20-compatible implementation for **Quantum I
 - Symbol: QINU
 - Decimals: 18
 - Initial supply: 1,000,000,000,000 QINU
-- Minting: 100% minted at deploy, with no external mint function
+- Minting: 100% minted at deploy to the configured initial supply recipient, with no external mint function
 - Supply: fixed and deflationary through burns
 - Launch limits: 0.5% max wallet and 0.2% max transaction
 - Transfer tax: 2% total
 - Tax split: 1% reflection, 0.5% burn, 0.5% tax treasury
-- Reactive burn: admin/multisig callable from the Burn Reserve wallet
+- Reactive burn: admin callable from the Burn Reserve wallet
 
 ## Contracts
 
@@ -26,28 +26,20 @@ This repository contains a QRC20/ERC20-compatible implementation for **Quantum I
 - `QINUVesting.sol`: separate linear vesting contract supporting team and seed schedules.
 - `QINULPLock.sol`: simple LP token lock contract.
 
-## Genesis Distribution
+## Genesis Minting
 
-The `QINU` constructor accepts a `GenesisAddresses` struct and allocates the full 1T supply on deployment:
+The `QINU` constructor accepts a deployment config and mints the full 1T supply to one wallet on deployment:
 
-| Allocation                    | Amount |
-| ----------------------------- | -----: |
-| Tipping / Social              |    10% |
-| Staking Rewards Pool          |    20% |
-| Airdrops                      |    10% |
-| Meme Treasury                 |     5% |
-| Liquidity                     |   7.5% |
-| Ecosystem Fund                |   7.5% |
-| Treasury (Quantum Foundation) |    10% |
-| Burn Reserve                  |    10% |
-| Team Vesting                  |    10% |
-| Seed Vesting                  |    10% |
+```text
+Initial supply recipient: 0x40ed2bf6557630e9184455da43a2df5149171b14
+Amount: 1,000,000,000,000 QINU
+```
 
-The tax treasury is a separate address from the Quantum Foundation treasury and receives the 0.5% transfer treasury fee.
+The initial supply recipient is intentionally separate from the admin owner. The tax treasury is also a separate address and receives the 0.5% transfer treasury fee.
 
 ## Admin Model
 
-Ownership is assigned at deployment to `adminMultisig`. Use your boss-controlled multisig address for this value, not the hot deployer wallet. The deployer pays gas, but should not become the production owner. The owner can:
+Ownership is assigned at deployment to `adminOwner`. This can be a normal wallet or a multisig. Use your boss-controlled admin wallet for this value, not the hot deployer wallet. The deployer pays gas, but should not become the production owner. The owner can:
 
 - Configure fee and limit exemptions
 - Configure max wallet and max transaction values
@@ -60,16 +52,16 @@ There is no DAO, no token ownership rights, no inflation, and no public minting 
 
 ## Vesting Schedules
 
-Deploy `QINUVesting` separately for each vesting bucket:
+If the initial supply recipient later wants to lock team or seed tokens, deploy `QINUVesting` separately for each vesting bucket and transfer tokens into those vesting contracts:
 
 - Team: `duration = 4 * 365 days`, `cliffDuration = 365 days`
 - Seed: `duration = 365 days`, `cliffDuration = 0`
 
-Use the vesting contract addresses in the token genesis struct so their allocations are delivered at token deployment.
+The token no longer sends genesis allocations directly to vesting contracts; the full initial supply goes to the configured initial supply recipient.
 
 ## Staking
 
-Deploy `QINUStaking` after the token and LP token addresses are known. Fund it with the 20% staking rewards allocation. It supports:
+Deploy `QINUStaking` after the token and LP token addresses are known. Fund it from the initial supply recipient or another wallet approved by the admin owner. It supports:
 
 - `stake(uint256)`
 - `unstake(uint256)`
@@ -138,31 +130,23 @@ git remote set-url origin https://github.com/thequantumfoundation/quantuminu.git
 
 ## Deployment
 
-Set environment variables for each genesis recipient before deployment:
+Set environment variables before deployment:
 
 ```bash
-export TIPPING_SOCIAL=0x...
-export STAKING_REWARDS_POOL=0x...
-export AIRDROPS=0x...
-export MEME_TREASURY=0x...
-export LIQUIDITY=0x...
-export ECOSYSTEM_FUND=0x...
-export FOUNDATION_TREASURY=0x...
+export INITIAL_SUPPLY_RECIPIENT=0x40ed2bf6557630e9184455da43a2df5149171b14
 export BURN_RESERVE=0x...
-export TEAM_VESTING=0x...
-export SEED_VESTING=0x...
 export TAX_TREASURY=0x...
-export ADMIN_MULTISIG=0x... # boss/multisig owner address, not the deployer wallet
+export ADMIN_OWNER=0x... # boss/admin wallet, not the deployer wallet
 npx hardhat run scripts/deploy.js --network <network>
 ```
 
-The deploy script verifies that `owner()` is `ADMIN_MULTISIG` after deployment and refuses to deploy with the deployer as admin unless `ALLOW_DEPLOYER_ADMIN=true` is explicitly set.
+The deploy script verifies that `owner()` is `ADMIN_OWNER` and that the full initial supply is held by `INITIAL_SUPPLY_RECIPIENT` after deployment. It refuses to deploy with the deployer as admin unless `ALLOW_DEPLOYER_ADMIN=true` is explicitly set, and refuses to use the same wallet for admin and initial supply unless `ALLOW_ADMIN_SUPPLY_RECIPIENT=true` is explicitly set.
 
-If you intentionally deployed with your own wallet as a temporary owner, transfer ownership to your boss/multisig immediately:
+If you intentionally deployed with your own wallet as a temporary owner, transfer ownership to your boss/admin wallet immediately:
 
 ```bash
 export CONTRACT_ADDRESS=0x...          # QINU or another Ownable contract
-export NEW_ADMIN_MULTISIG=0x...        # boss/multisig owner address
+export NEW_ADMIN_OWNER=0x...           # boss/admin wallet address
 npm run transfer-admin -- --network <network>
 ```
 
@@ -170,7 +154,7 @@ For multiple Ownable contracts, such as QINU and QINUStaking, use a comma-separa
 
 ```bash
 export CONTRACT_ADDRESSES=0xQINU...,0xSTAKING...
-export NEW_ADMIN_MULTISIG=0x...
+export NEW_ADMIN_OWNER=0x...
 npm run transfer-admin -- --network <network>
 ```
 

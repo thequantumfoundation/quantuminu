@@ -13,6 +13,14 @@ function requireAddress(name) {
   return hre.ethers.getAddress(value);
 }
 
+function requireAdminAddress() {
+  const value = process.env.NEW_ADMIN_OWNER || process.env.NEW_ADMIN_MULTISIG;
+  if (!value) {
+    throw new Error("Missing NEW_ADMIN_OWNER");
+  }
+  return hre.ethers.getAddress(value);
+}
+
 function contractAddresses() {
   const singleAddress = process.env.CONTRACT_ADDRESS;
   const multipleAddresses = process.env.CONTRACT_ADDRESSES;
@@ -29,11 +37,11 @@ function contractAddresses() {
 
 async function main() {
   const [sender] = await hre.ethers.getSigners();
-  const newAdmin = requireAddress("NEW_ADMIN_MULTISIG");
+  const newAdmin = requireAdminAddress();
   const addresses = contractAddresses();
 
   if (newAdmin === sender.address && process.env.ALLOW_DEPLOYER_ADMIN !== "true") {
-    throw new Error("NEW_ADMIN_MULTISIG is the sender address. Set it to your boss/multisig address, or set ALLOW_DEPLOYER_ADMIN=true if this is intentional.");
+    throw new Error("NEW_ADMIN_OWNER is the sender address. Set it to your boss/admin wallet, or set ALLOW_DEPLOYER_ADMIN=true if this is intentional.");
   }
 
   for (const address of addresses) {
