@@ -9,12 +9,7 @@ async function deployQinu() {
   const [admin, initialSupplyRecipient, burnReserve, taxTreasury, user, recipient] = signers;
 
   const QINU = await ethers.getContractFactory("QINU");
-  const qinu = await QINU.deploy({
-    initialSupplyRecipient: initialSupplyRecipient.address,
-    burnReserve: burnReserve.address,
-    taxTreasury: taxTreasury.address,
-    adminOwner: admin.address
-  });
+  const qinu = await QINU.deploy(initialSupplyRecipient.address, burnReserve.address, taxTreasury.address, admin.address);
 
   return { qinu, signers, admin, initialSupplyRecipient, burnReserve, taxTreasury, user, recipient };
 }
@@ -23,12 +18,7 @@ describe("QINU", function () {
   it("lets a deployer assign ownership directly to a separate admin wallet", async function () {
     const [deployer, bossAdmin, initialSupplyRecipient, burnReserve, taxTreasury] = await ethers.getSigners();
     const QINU = await ethers.getContractFactory("QINU", deployer);
-    const qinu = await QINU.deploy({
-      initialSupplyRecipient: initialSupplyRecipient.address,
-      burnReserve: burnReserve.address,
-      taxTreasury: taxTreasury.address,
-      adminOwner: bossAdmin.address
-    });
+    const qinu = await QINU.deploy(initialSupplyRecipient.address, burnReserve.address, taxTreasury.address, bossAdmin.address);
 
     expect(await qinu.owner()).to.equal(bossAdmin.address);
     expect(await qinu.balanceOf(initialSupplyRecipient.address)).to.equal(parse("1000000000000"));
@@ -51,12 +41,7 @@ describe("QINU", function () {
   it("supports the configured mainnet initial supply recipient wallet", async function () {
     const [admin, burnReserve, taxTreasury] = await ethers.getSigners();
     const QINU = await ethers.getContractFactory("QINU");
-    const qinu = await QINU.deploy({
-      initialSupplyRecipient: MAINNET_INITIAL_SUPPLY_RECIPIENT,
-      burnReserve: burnReserve.address,
-      taxTreasury: taxTreasury.address,
-      adminOwner: admin.address
-    });
+    const qinu = await QINU.deploy(MAINNET_INITIAL_SUPPLY_RECIPIENT, burnReserve.address, taxTreasury.address, admin.address);
 
     expect(await qinu.balanceOf(MAINNET_INITIAL_SUPPLY_RECIPIENT)).to.equal(await qinu.totalSupply());
   });

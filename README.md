@@ -28,7 +28,7 @@ This repository contains a QRC20/ERC20-compatible implementation for **Quantum I
 
 ## Genesis Minting
 
-The `QINU` constructor accepts a deployment config and mints the full 1T supply to one wallet on deployment:
+The `QINU` constructor accepts four direct address fields and mints the full 1T supply to one wallet on deployment:
 
 ```text
 Initial supply recipient: 0x40ed2bf6557630e9184455da43a2df5149171b14
@@ -36,6 +36,15 @@ Amount: 1,000,000,000,000 QINU
 ```
 
 The initial supply recipient is intentionally separate from the admin owner. The tax treasury is also a separate address and receives the 0.5% transfer treasury fee.
+
+Manual deploy tools such as Remix should show these constructor fields separately:
+
+```text
+initialSupplyRecipient = 0x40ed2bf6557630e9184455da43a2df5149171b14
+burnReserve            = 0x...
+taxTreasury            = 0x...
+adminOwner             = 0x...
+```
 
 ## Admin Model
 

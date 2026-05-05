@@ -22,12 +22,12 @@ async function main() {
   }
 
   const QINU = await hre.ethers.getContractFactory("QINU");
-  const qinu = await QINU.deploy({
+  const qinu = await QINU.deploy(
     initialSupplyRecipient,
-    burnReserve: requireAddress("BURN_RESERVE"),
-    taxTreasury: requireAddress("TAX_TREASURY"),
+    requireAddress("BURN_RESERVE"),
+    requireAddress("TAX_TREASURY"),
     adminOwner
-  });
+  );
 
   await qinu.waitForDeployment();
   const owner = await qinu.owner();

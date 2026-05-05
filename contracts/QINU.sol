@@ -56,39 +56,37 @@ contract QINU is Ownable {
     event ReflectionEnabledSet(bool enabled);
     event ReactiveBurn(address indexed reserve, uint256 amount);
 
-    struct DeploymentConfig {
-        address initialSupplyRecipient;
-        address burnReserve;
-        address taxTreasury;
-        address adminOwner;
-    }
+    constructor(
+        address initialSupplyRecipient,
+        address burnReserve_,
+        address taxTreasury,
+        address adminOwner
+    ) Ownable(adminOwner) {
+        _requireNonZero(initialSupplyRecipient);
+        _requireNonZero(burnReserve_);
+        _requireNonZero(taxTreasury);
+        _requireNonZero(adminOwner);
 
-    constructor(DeploymentConfig memory config) Ownable(config.adminOwner) {
-        _requireNonZero(config.initialSupplyRecipient);
-        _requireNonZero(config.burnReserve);
-        _requireNonZero(config.taxTreasury);
-        _requireNonZero(config.adminOwner);
-
-        treasury = config.taxTreasury;
-        burnReserve = config.burnReserve;
+        treasury = taxTreasury;
+        burnReserve = burnReserve_;
 
         _setExcludedFromReflection(BURN_ADDRESS, true);
         _setExcludedFromReflection(address(this), true);
-        _setExcludedFromReflection(config.burnReserve, true);
-        _setExcludedFromReflection(config.taxTreasury, true);
+        _setExcludedFromReflection(burnReserve_, true);
+        _setExcludedFromReflection(taxTreasury, true);
 
-        _setFeeExempt(config.adminOwner, true);
-        _setFeeExempt(config.initialSupplyRecipient, true);
-        _setFeeExempt(config.taxTreasury, true);
-        _setFeeExempt(config.burnReserve, true);
+        _setFeeExempt(adminOwner, true);
+        _setFeeExempt(initialSupplyRecipient, true);
+        _setFeeExempt(taxTreasury, true);
+        _setFeeExempt(burnReserve_, true);
 
-        _setLimitExempt(config.adminOwner, true);
-        _setLimitExempt(config.initialSupplyRecipient, true);
-        _setLimitExempt(config.taxTreasury, true);
-        _setLimitExempt(config.burnReserve, true);
+        _setLimitExempt(adminOwner, true);
+        _setLimitExempt(initialSupplyRecipient, true);
+        _setLimitExempt(taxTreasury, true);
+        _setLimitExempt(burnReserve_, true);
         _setLimitExempt(BURN_ADDRESS, true);
 
-        _mintGenesis(config.initialSupplyRecipient, INITIAL_SUPPLY);
+        _mintGenesis(initialSupplyRecipient, INITIAL_SUPPLY);
     }
 
     function totalSupply() external view returns (uint256) {
