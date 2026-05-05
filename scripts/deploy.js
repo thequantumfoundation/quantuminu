@@ -10,22 +10,36 @@ function requireAddress(name) {
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
-  const initialSupplyRecipient = requireAddress("INITIAL_SUPPLY_RECIPIENT");
+  const tippingSocial = requireAddress("TIPPING_SOCIAL");
+  const stakingRewardsPool = requireAddress("STAKING_REWARDS_POOL");
+  const airdrops = requireAddress("AIRDROPS");
+  const memeTreasury = requireAddress("MEME_TREASURY");
+  const liquidity = requireAddress("LIQUIDITY");
+  const ecosystemFund = requireAddress("ECOSYSTEM_FUND");
+  const foundationTreasury = requireAddress("FOUNDATION_TREASURY");
+  const burnReserve = requireAddress("BURN_RESERVE");
+  const team = requireAddress("TEAM");
+  const publicSale = requireAddress("PUBLIC_SALE");
+  const taxTreasury = requireAddress("TAX_TREASURY");
   const adminOwner = requireAddress("ADMIN_OWNER");
 
   if (adminOwner === deployer.address && process.env.ALLOW_DEPLOYER_ADMIN !== "true") {
     throw new Error("ADMIN_OWNER is the deployer address. Set it to your boss/admin wallet, or set ALLOW_DEPLOYER_ADMIN=true for a temporary/admin-transfer deployment.");
   }
 
-  if (adminOwner === initialSupplyRecipient && process.env.ALLOW_ADMIN_SUPPLY_RECIPIENT !== "true") {
-    throw new Error("ADMIN_OWNER is the initial supply recipient. Use separate wallets, or set ALLOW_ADMIN_SUPPLY_RECIPIENT=true if this is intentional.");
-  }
-
   const QINU = await hre.ethers.getContractFactory("QINU");
   const qinu = await QINU.deploy(
-    initialSupplyRecipient,
-    requireAddress("BURN_RESERVE"),
-    requireAddress("TAX_TREASURY"),
+    tippingSocial,
+    stakingRewardsPool,
+    airdrops,
+    memeTreasury,
+    liquidity,
+    ecosystemFund,
+    foundationTreasury,
+    burnReserve,
+    team,
+    publicSale,
+    taxTreasury,
     adminOwner
   );
 
@@ -36,16 +50,11 @@ async function main() {
     throw new Error(`Unexpected owner ${owner}; expected ${adminOwner}`);
   }
 
-  const recipientBalance = await qinu.balanceOf(initialSupplyRecipient);
   const totalSupply = await qinu.totalSupply();
-
-  if (recipientBalance !== totalSupply) {
-    throw new Error(`Unexpected initial supply recipient balance ${recipientBalance}; expected ${totalSupply}`);
-  }
 
   console.log(`Deployer: ${deployer.address}`);
   console.log(`Admin/owner: ${owner}`);
-  console.log(`Initial supply recipient: ${initialSupplyRecipient}`);
+  console.log(`Total supply: ${totalSupply}`);
   console.log(`QINU deployed to ${qinu.target}`);
 }
 

@@ -14,6 +14,8 @@ contract QINU is Ownable {
     uint256 public constant BURN_FEE = 50;
     uint256 public constant TREASURY_FEE = 50;
     uint256 public constant TOTAL_FEE = REFLECTION_FEE + BURN_FEE + TREASURY_FEE;
+    uint256 public constant REACTIVE_BURN_THRESHOLD = 10_000_000_000 * 1e18;
+    uint256 public constant REACTIVE_BURN_AMOUNT = 1_000_000 * 1e18;
     uint256 public constant MAX_REFLECTION_EXCLUSIONS = 100;
     uint256 private constant MAX = type(uint256).max;
 
@@ -25,6 +27,8 @@ contract QINU is Ownable {
 
     uint256 public maxWallet = INITIAL_SUPPLY / 200;
     uint256 public maxTx = INITIAL_SUPPLY / 500;
+    uint256 public reactiveBurnVolume;
+    uint256 public totalReactiveBurned;
 
     bool public taxEnabled = true;
     bool public limitsEnabled = true;
@@ -38,7 +42,7 @@ contract QINU is Ownable {
     mapping(address => mapping(address => uint256)) private _allowances;
     mapping(address => bool) public isFeeExempt;
     mapping(address => bool) public isLimitExempt;
-    mapping(address => bool) public isPair;
+    mapping(address => bool) public isReactiveBurnExempt;
     mapping(address => bool) public isExcludedFromReflection;
     address[] private _excludedFromReflection;
 
@@ -50,20 +54,37 @@ contract QINU is Ownable {
     event MaxWalletSet(uint256 amount);
     event MaxTxSet(uint256 amount);
     event TreasurySet(address indexed treasury);
-    event PairSet(address indexed pair, bool isPair);
     event TaxEnabledSet(bool enabled);
     event LimitsEnabledSet(bool enabled);
     event ReflectionEnabledSet(bool enabled);
+    event ReactiveBurnExemptSet(address indexed account, bool isExempt);
     event ReactiveBurn(address indexed reserve, uint256 amount);
+    event GenesisAllocation(string indexed category, address indexed recipient, uint256 amount);
 
     constructor(
-        address initialSupplyRecipient,
+        address tippingSocial,
+        address stakingRewardsPool,
+        address airdrops,
+        address memeTreasury,
+        address liquidity,
+        address ecosystemFund,
+        address foundationTreasury,
         address burnReserve_,
+        address team,
+        address publicSale,
         address taxTreasury,
         address adminOwner
     ) Ownable(adminOwner) {
-        _requireNonZero(initialSupplyRecipient);
+        _requireNonZero(tippingSocial);
+        _requireNonZero(stakingRewardsPool);
+        _requireNonZero(airdrops);
+        _requireNonZero(memeTreasury);
+        _requireNonZero(liquidity);
+        _requireNonZero(ecosystemFund);
+        _requireNonZero(foundationTreasury);
         _requireNonZero(burnReserve_);
+        _requireNonZero(team);
+        _requireNonZero(publicSale);
         _requireNonZero(taxTreasury);
         _requireNonZero(adminOwner);
 
@@ -73,20 +94,53 @@ contract QINU is Ownable {
         _setExcludedFromReflection(BURN_ADDRESS, true);
         _setExcludedFromReflection(address(this), true);
         _setExcludedFromReflection(burnReserve_, true);
+        _setExcludedFromReflection(stakingRewardsPool, true);
+        _setExcludedFromReflection(team, true);
+        _setExcludedFromReflection(publicSale, true);
         _setExcludedFromReflection(taxTreasury, true);
 
         _setFeeExempt(adminOwner, true);
-        _setFeeExempt(initialSupplyRecipient, true);
+        _setFeeExempt(stakingRewardsPool, true);
+        _setFeeExempt(foundationTreasury, true);
         _setFeeExempt(taxTreasury, true);
         _setFeeExempt(burnReserve_, true);
+        _setFeeExempt(team, true);
+        _setFeeExempt(publicSale, true);
 
         _setLimitExempt(adminOwner, true);
-        _setLimitExempt(initialSupplyRecipient, true);
+        _setLimitExempt(stakingRewardsPool, true);
+        _setLimitExempt(foundationTreasury, true);
         _setLimitExempt(taxTreasury, true);
         _setLimitExempt(burnReserve_, true);
+        _setLimitExempt(team, true);
+        _setLimitExempt(publicSale, true);
         _setLimitExempt(BURN_ADDRESS, true);
 
-        _mintGenesis(initialSupplyRecipient, INITIAL_SUPPLY);
+        _setReactiveBurnExempt(adminOwner, true);
+        _setReactiveBurnExempt(tippingSocial, true);
+        _setReactiveBurnExempt(stakingRewardsPool, true);
+        _setReactiveBurnExempt(airdrops, true);
+        _setReactiveBurnExempt(memeTreasury, true);
+        _setReactiveBurnExempt(liquidity, true);
+        _setReactiveBurnExempt(ecosystemFund, true);
+        _setReactiveBurnExempt(foundationTreasury, true);
+        _setReactiveBurnExempt(burnReserve_, true);
+        _setReactiveBurnExempt(team, true);
+        _setReactiveBurnExempt(publicSale, true);
+        _setReactiveBurnExempt(taxTreasury, true);
+        _setReactiveBurnExempt(address(this), true);
+        _setReactiveBurnExempt(BURN_ADDRESS, true);
+
+        _mintGenesisAllocation("Tipping & Social Rewards", tippingSocial, INITIAL_SUPPLY * 10 / 100);
+        _mintGenesisAllocation("Staking & Yield Incentives", stakingRewardsPool, INITIAL_SUPPLY * 20 / 100);
+        _mintGenesisAllocation("Community Airdrops & Campaigns", airdrops, INITIAL_SUPPLY * 10 / 100);
+        _mintGenesisAllocation("Meme Treasury", memeTreasury, INITIAL_SUPPLY * 5 / 100);
+        _mintGenesisAllocation("Liquidity Pools", liquidity, INITIAL_SUPPLY * 75 / 1000);
+        _mintGenesisAllocation("Ecosystem Growth Fund", ecosystemFund, INITIAL_SUPPLY * 75 / 1000);
+        _mintGenesisAllocation("Treasury (Quantum Foundation)", foundationTreasury, INITIAL_SUPPLY * 10 / 100);
+        _mintGenesisAllocation("Burn Reserve", burnReserve_, INITIAL_SUPPLY * 10 / 100);
+        _mintGenesisAllocation("Core Team & Builders", team, INITIAL_SUPPLY * 10 / 100);
+        _mintGenesisAllocation("Seed / Public Sale", publicSale, INITIAL_SUPPLY * 10 / 100);
     }
 
     function totalSupply() external view returns (uint256) {
@@ -159,11 +213,8 @@ contract QINU is Ownable {
         emit TreasurySet(newTreasury);
     }
 
-    function setPair(address pair, bool pairStatus) external onlyOwner {
-        _requireNonZero(pair);
-        isPair[pair] = pairStatus;
-        _setLimitExempt(pair, pairStatus);
-        emit PairSet(pair, pairStatus);
+    function setReactiveBurnExempt(address account, bool exempt) external onlyOwner {
+        _setReactiveBurnExempt(account, exempt);
     }
 
     function setTaxEnabled(bool enabled) external onlyOwner {
@@ -186,6 +237,7 @@ contract QINU is Ownable {
     }
 
     function triggerReactiveBurn(uint256 amount) external onlyOwner {
+        totalReactiveBurned += amount;
         _burn(burnReserve, amount);
         emit ReactiveBurn(burnReserve, amount);
     }
@@ -230,9 +282,11 @@ contract QINU is Ownable {
 
         _tokenTransfer(from, to, amount, takeFee);
 
-        if (limitsEnabled && !isLimitExempt[to] && !isPair[to]) {
+        if (limitsEnabled && !isLimitExempt[to]) {
             require(balanceOf(to) <= maxWallet, "QINU: max wallet exceeded");
         }
+
+        _trackReactiveBurn(from, to, amount);
     }
 
     function _tokenTransfer(address from, address to, uint256 amount, bool takeFee) private {
@@ -283,6 +337,32 @@ contract QINU is Ownable {
         emit Burn(from, amount);
     }
 
+    function _trackReactiveBurn(address from, address to, uint256 amount) private {
+        if (isReactiveBurnExempt[from] || isReactiveBurnExempt[to]) {
+            return;
+        }
+
+        uint256 pendingVolume = reactiveBurnVolume + amount;
+        uint256 burnCount = pendingVolume / REACTIVE_BURN_THRESHOLD;
+        reactiveBurnVolume = pendingVolume % REACTIVE_BURN_THRESHOLD;
+
+        if (burnCount == 0) {
+            return;
+        }
+
+        uint256 pendingBurnAmount = burnCount * REACTIVE_BURN_AMOUNT;
+        uint256 reserveBalance = balanceOf(burnReserve);
+        uint256 burnAmount = pendingBurnAmount > reserveBalance ? reserveBalance : pendingBurnAmount;
+
+        if (burnAmount == 0) {
+            return;
+        }
+
+        totalReactiveBurned += burnAmount;
+        _burn(burnReserve, burnAmount);
+        emit ReactiveBurn(burnReserve, burnAmount);
+    }
+
     function _debit(address account, uint256 amount, uint256 rate) private {
         if (isExcludedFromReflection[account]) {
             require(_balances[account] >= amount, "QINU: insufficient balance");
@@ -312,6 +392,11 @@ contract QINU is Ownable {
         emit Transfer(address(0), account, amount);
     }
 
+    function _mintGenesisAllocation(string memory category, address account, uint256 amount) private {
+        _mintGenesis(account, amount);
+        emit GenesisAllocation(category, account, amount);
+    }
+
     function _approve(address tokenOwner, address spender, uint256 amount) private {
         _requireNonZero(tokenOwner);
         _requireNonZero(spender);
@@ -329,6 +414,12 @@ contract QINU is Ownable {
         _requireNonZero(account);
         isLimitExempt[account] = exempt;
         emit LimitExemptSet(account, exempt);
+    }
+
+    function _setReactiveBurnExempt(address account, bool exempt) private {
+        _requireNonZero(account);
+        isReactiveBurnExempt[account] = exempt;
+        emit ReactiveBurnExemptSet(account, exempt);
     }
 
     function _setExcludedFromReflection(address account, bool excluded) private {
