@@ -30,18 +30,18 @@ This repository contains a QRC20/ERC20-compatible implementation for **Quantum I
 
 The `QINU` constructor accepts a `GenesisAddresses` struct and allocates the full 1T supply on deployment:
 
-| Allocation | Amount |
-| --- | ---: |
-| Tipping / Social | 10% |
-| Staking Rewards Pool | 20% |
-| Airdrops | 10% |
-| Meme Treasury | 5% |
-| Liquidity | 7.5% |
-| Ecosystem Fund | 7.5% |
-| Treasury (Quantum Foundation) | 10% |
-| Burn Reserve | 10% |
-| Team Vesting | 10% |
-| Seed Vesting | 10% |
+| Allocation                    | Amount |
+| ----------------------------- | -----: |
+| Tipping / Social              |    10% |
+| Staking Rewards Pool          |    20% |
+| Airdrops                      |    10% |
+| Meme Treasury                 |     5% |
+| Liquidity                     |   7.5% |
+| Ecosystem Fund                |   7.5% |
+| Treasury (Quantum Foundation) |    10% |
+| Burn Reserve                  |    10% |
+| Team Vesting                  |    10% |
+| Seed Vesting                  |    10% |
 
 The tax treasury is a separate address from the Quantum Foundation treasury and receives the 0.5% transfer treasury fee.
 
@@ -84,6 +84,31 @@ Deploy `QINUStaking` after the token and LP token addresses are known. Fund it w
 ```bash
 npm install
 npm test
+```
+
+## Foundry / Forge
+
+This repository also supports Forge builds through `foundry.toml`. OpenZeppelin Contracts is pinned as a Git submodule under `lib/openzeppelin-contracts`.
+
+Install Foundry if needed:
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+Download Forge dependencies and compile:
+
+```bash
+npm run forge:install
+npm run forge:build
+```
+
+Direct Forge commands work too:
+
+```bash
+git submodule update --init --recursive
+forge build
 ```
 
 ## Repository Upload

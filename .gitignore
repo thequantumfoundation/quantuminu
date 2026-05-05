@@ -1,6 +1,9 @@
 node_modules/
 artifacts/
 cache/
+forge-cache/
+out/
+broadcast/
 coverage/
 typechain-types/
 .env

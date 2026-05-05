@@ -15,6 +15,9 @@
   "homepage": "https://github.com/thequantumfoundation/quantuminu#readme",
   "scripts": {
     "compile": "hardhat compile",
+    "forge:install": "git submodule update --init --recursive",
+    "forge:build": "forge build",
+    "forge:test": "forge test",
     "test": "CI=true hardhat test",
     "clean": "hardhat clean",
     "transfer-admin": "hardhat run scripts/transfer-admin.js"
