@@ -48,7 +48,7 @@ describe("QINU", function () {
     );
 
     expect(await qinu.owner()).to.equal(bossAdmin.address);
-    expect(await qinu.balanceOf(custodyWallet.address)).to.equal(parse("1000000000000"));
+    expect(await qinu.balanceOf(custodyWallet.address)).to.equal(parse("100000000000000"));
     await expect(qinu.connect(deployer).setTaxEnabled(false)).to.be.revertedWithCustomError(qinu, "OwnableUnauthorizedAccount");
     await qinu.connect(bossAdmin).setTaxEnabled(false);
     expect(await qinu.taxEnabled()).to.equal(false);
@@ -60,17 +60,17 @@ describe("QINU", function () {
     expect(await qinu.name()).to.equal("Quantum Inu");
     expect(await qinu.symbol()).to.equal("QINU");
     expect(await qinu.decimals()).to.equal(18);
-    expect(await qinu.totalSupply()).to.equal(parse("1000000000000"));
-    expect(await qinu.balanceOf(tippingSocial.address)).to.equal(parse("100000000000"));
-    expect(await qinu.balanceOf(stakingRewardsPool.address)).to.equal(parse("200000000000"));
-    expect(await qinu.balanceOf(airdrops.address)).to.equal(parse("100000000000"));
-    expect(await qinu.balanceOf(memeTreasury.address)).to.equal(parse("50000000000"));
-    expect(await qinu.balanceOf(liquidity.address)).to.equal(parse("75000000000"));
-    expect(await qinu.balanceOf(ecosystemFund.address)).to.equal(parse("75000000000"));
-    expect(await qinu.balanceOf(foundationTreasury.address)).to.equal(parse("100000000000"));
-    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("100000000000"));
-    expect(await qinu.balanceOf(team.address)).to.equal(parse("100000000000"));
-    expect(await qinu.balanceOf(publicSale.address)).to.equal(parse("100000000000"));
+    expect(await qinu.totalSupply()).to.equal(parse("100000000000000"));
+    expect(await qinu.balanceOf(tippingSocial.address)).to.equal(parse("10000000000000"));
+    expect(await qinu.balanceOf(stakingRewardsPool.address)).to.equal(parse("20000000000000"));
+    expect(await qinu.balanceOf(airdrops.address)).to.equal(parse("10000000000000"));
+    expect(await qinu.balanceOf(memeTreasury.address)).to.equal(parse("5000000000000"));
+    expect(await qinu.balanceOf(liquidity.address)).to.equal(parse("7500000000000"));
+    expect(await qinu.balanceOf(ecosystemFund.address)).to.equal(parse("7500000000000"));
+    expect(await qinu.balanceOf(foundationTreasury.address)).to.equal(parse("10000000000000"));
+    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("10000000000000"));
+    expect(await qinu.balanceOf(team.address)).to.equal(parse("10000000000000"));
+    expect(await qinu.balanceOf(publicSale.address)).to.equal(parse("10000000000000"));
   });
 
   it("supports the mainnet custody wallet while preserving allocation events", async function () {
@@ -105,7 +105,7 @@ describe("QINU", function () {
 
     expect(await qinu.balanceOf(recipient.address)).to.be.gte(parse("980000"));
     expect(await qinu.balanceOf(taxTreasury.address)).to.equal(parse("5000"));
-    expect(await qinu.totalSupply()).to.equal(parse("999999995000"));
+    expect(await qinu.totalSupply()).to.equal(parse("99999999995000"));
     expect(await qinu.totalFeesReflected()).to.equal(parse("10000"));
   });
 
@@ -114,28 +114,27 @@ describe("QINU", function () {
 
     await qinu.setMaxWallet(parse("1000000000000"));
     await qinu.setLimitExempt(tippingSocial.address, true);
-    await qinu.connect(tippingSocial).transfer(user.address, parse("3000000000"));
+    await qinu.connect(tippingSocial).transfer(user.address, parse("300000000000"));
     await qinu.setLimitExempt(tippingSocial.address, false);
-    await expect(qinu.connect(user).transfer(recipient.address, parse("3000000000"))).to.be.revertedWith("QINU: max tx exceeded");
+    await expect(qinu.connect(user).transfer(recipient.address, parse("300000000000"))).to.be.revertedWith("QINU: max tx exceeded");
 
-    await qinu.setMaxTx(parse("10000000000"));
-    await qinu.setMaxWallet(parse("5000000000"));
-    await expect(qinu.connect(tippingSocial).transfer(recipient.address, parse("6000000000"))).to.be.revertedWith("QINU: max wallet exceeded");
+    await qinu.setMaxTx(parse("1000000000000"));
+    await qinu.setMaxWallet(parse("500000000000"));
+    await expect(qinu.connect(tippingSocial).transfer(recipient.address, parse("600000000000"))).to.be.revertedWith("QINU: max wallet exceeded");
   });
 
   it("allows admin to trigger reserve burns from the tokenomics burn reserve", async function () {
     const { qinu, burnReserve } = await deployQinu();
 
-    await qinu.triggerReactiveBurn(parse("1000000"));
+    await qinu.triggerReactiveBurn(parse("100000000"));
 
-    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("99999000000"));
-    expect(await qinu.totalSupply()).to.equal(parse("999999000000"));
+    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("9999900000000"));
+    expect(await qinu.totalSupply()).to.equal(parse("99999900000000"));
   });
 
   it("does not count reactive burn volume for fee-exempt transfers", async function () {
     const { qinu, tippingSocial, user, recipient } = await deployQinu();
 
-    await qinu.setMaxTx(parse("20000000000"));
     await qinu.setMaxWallet(parse("1000000000000"));
     await qinu.setFeeExempt(tippingSocial.address, true);
 
@@ -148,25 +147,23 @@ describe("QINU", function () {
   it("automatically burns from the reserve for each 10B QINU moved between non-exempt users", async function () {
     const { qinu, tippingSocial, burnReserve, user, recipient } = await deployQinu();
 
-    await qinu.setMaxTx(parse("20000000000"));
     await qinu.setMaxWallet(parse("1000000000000"));
     await qinu.setFeeExempt(tippingSocial.address, true);
     await qinu.connect(tippingSocial).transfer(user.address, parse("10000000000"));
 
     await expect(qinu.connect(user).transfer(recipient.address, parse("10000000000")))
       .to.emit(qinu, "ReactiveBurn")
-      .withArgs(burnReserve.address, parse("1000000"));
+      .withArgs(burnReserve.address, parse("100000000"));
 
     expect(await qinu.reactiveBurnVolume()).to.equal(0);
-    expect(await qinu.totalReactiveBurned()).to.equal(parse("1000000"));
-    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("99999000000"));
-    expect(await qinu.totalSupply()).to.equal(parse("999949000000"));
+    expect(await qinu.totalReactiveBurned()).to.equal(parse("100000000"));
+    expect(await qinu.balanceOf(burnReserve.address)).to.equal(parse("9999900000000"));
+    expect(await qinu.totalSupply()).to.equal(parse("99999850000000"));
   });
 
   it("does not count admin or reserve transfers toward automatic reactive burns", async function () {
     const { qinu, burnReserve, user } = await deployQinu();
 
-    await qinu.setMaxTx(parse("20000000000"));
     await qinu.setMaxWallet(parse("1000000000000"));
 
     await qinu.connect(burnReserve).transfer(user.address, parse("10000000000"));

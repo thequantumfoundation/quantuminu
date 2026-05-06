@@ -11,13 +11,13 @@ This repository contains a QRC20/ERC20-compatible implementation for **Quantum I
 - Name: Quantum Inu
 - Symbol: QINU
 - Decimals: 18
-- Initial supply: 1,000,000,000,000 QINU
+- Initial supply: 100,000,000,000,000 QINU
 - Minting: 100% minted at deploy through explicit tokenomics allocation buckets, with no external mint function
 - Supply: fixed and deflationary through burns
-- Launch limits: 0.5% max wallet and 0.2% max transaction
+- Launch limits: 0.5% max wallet (500B QINU) and 0.2% max transaction (200B QINU)
 - Transfer tax: 2% total
 - Tax split: 1% reflection, 0.5% burn, 0.5% tax treasury
-- Reactive burn: every 10B QINU traded or tipped burns 1M QINU from the Burn Reserve wallet
+- Reactive burn: every 10B QINU traded or tipped burns 100M QINU from the Burn Reserve wallet
 
 ## Contracts
 
@@ -27,7 +27,7 @@ This repository contains a QRC20/ERC20-compatible implementation for **Quantum I
 
 ## Genesis Minting
 
-The `QINU` constructor accepts direct address fields for each tokenomics allocation bucket and mints the full 1T supply according to the tokenomics paper on deployment.
+The `QINU` constructor accepts direct address fields for each tokenomics allocation bucket and mints the full 100T supply according to the tokenomics paper on deployment.
 
 Each allocation emits a `GenesisAllocation` event with the category, recipient, and amount. If a single custody wallet will manage distribution operationally, use that same wallet for the allocation recipient fields. The on-chain events still show the paper allocation buckets.
 
@@ -87,7 +87,7 @@ setReactiveBurnExempt(0xWalletAddress, true)
 setReactiveBurnExempt(0xWalletAddress, false)
 ```
 
-- For every `10,000,000,000 QINU` counted, the contract burns `1,000,000 QINU` from `burnReserve`.
+- For every `10,000,000,000 QINU` counted, the contract burns `100,000,000 QINU` from `burnReserve`.
 - The counter remainder is kept in `reactiveBurnVolume()` until the next threshold is reached.
 - `totalReactiveBurned()` tracks reserve burns made through the reactive burn functions.
 

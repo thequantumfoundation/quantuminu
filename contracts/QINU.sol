@@ -8,14 +8,14 @@ contract QINU is Ownable {
     string public constant symbol = "QINU";
     uint8 public constant decimals = 18;
 
-    uint256 public constant INITIAL_SUPPLY = 1_000_000_000_000 * 1e18;
+    uint256 public constant INITIAL_SUPPLY = 100_000_000_000_000 * 1e18;
     uint256 public constant FEE_DENOMINATOR = 10_000;
     uint256 public constant REFLECTION_FEE = 100;
     uint256 public constant BURN_FEE = 50;
     uint256 public constant TREASURY_FEE = 50;
     uint256 public constant TOTAL_FEE = REFLECTION_FEE + BURN_FEE + TREASURY_FEE;
     uint256 public constant REACTIVE_BURN_THRESHOLD = 10_000_000_000 * 1e18;
-    uint256 public constant REACTIVE_BURN_AMOUNT = 1_000_000 * 1e18;
+    uint256 public constant REACTIVE_BURN_AMOUNT = 100_000_000 * 1e18;
     uint256 public constant MAX_REFLECTION_EXCLUSIONS = 100;
     uint256 private constant MAX = type(uint256).max;
 
